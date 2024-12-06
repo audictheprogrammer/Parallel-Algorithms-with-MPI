@@ -14,4 +14,11 @@
 #include "allocate.h"
 #include "timing.h"
 
-int main(int argc, char** argv) { return EXIT_SUCCESS; }
+int main(int argc, char** argv) {
+    if (argc == 1) {
+        printf("Buongiorno Mondo \n");
+        return EXIT_SUCCESS; 
+    }
+    printf("Buongiorno %s \n", argv[1]);
+    return EXIT_SUCCESS; 
+}
