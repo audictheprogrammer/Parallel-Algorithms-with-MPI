@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 #include <mpi.h>
 
 #include "allocate.h"
@@ -45,14 +46,15 @@ int main(int argc, char** argv)
 
     int rest = N % size;
     int N_local = N / size + (rank < rest);
+    int N_allocate = N / size + rest;
 
     a = (double*)allocate(ARRAY_ALIGNMENT, N_local * N * bytesPerWord);
-    x = (double*)allocate(ARRAY_ALIGNMENT, N_local * bytesPerWord);
+    x = (double*)allocate(ARRAY_ALIGNMENT, N_allocate * bytesPerWord);
     y = (double*)allocate(ARRAY_ALIGNMENT, N_local * bytesPerWord);
 
     // initialize arrays
     for (int i = 0; i < N_local; i++) {
-        double I = rank * N_local + i; // Global I vs Local i. Assuming N % size == 0.
+        double I = rank * (N/size) + fmin(rank, rest) + i; // Global I vs Local i. Assuming N % size == 0.
         x[i] = (double)I;
         y[i] = 0.0;
 
