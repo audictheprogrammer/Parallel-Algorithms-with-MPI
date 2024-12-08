@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <mpi.h>
 
 #include "allocate.h"
 #include "timing.h"
@@ -37,17 +38,26 @@ int main(int argc, char** argv)
         exit(EXIT_SUCCESS);
     }
 
-    a = (double*)allocate(ARRAY_ALIGNMENT, N * N * bytesPerWord);
-    x = (double*)allocate(ARRAY_ALIGNMENT, N * bytesPerWord);
-    y = (double*)allocate(ARRAY_ALIGNMENT, N * bytesPerWord);
+    MPI_Init(&argc, &argv);
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int rest = N % size;
+    int N_local = N / size + (rank < rest);
+
+    a = (double*)allocate(ARRAY_ALIGNMENT, N_local * N * bytesPerWord);
+    x = (double*)allocate(ARRAY_ALIGNMENT, N_local * bytesPerWord);
+    y = (double*)allocate(ARRAY_ALIGNMENT, N_local * bytesPerWord);
 
     // initialize arrays
-    for (int i = 0; i < N; i++) {
-        x[i] = (double)i;
+    for (int i = 0; i < N_local; i++) {
+        double I = rank * N_local + i; // Global I vs Local i. Assuming N % size == 0.
+        x[i] = (double)I;
         y[i] = 0.0;
 
         for (int j = 0; j < N; j++) {
-            a[i * N + j] = (double)j + i;
+            a[i * N + j] = (double)j + I;
         }
     }
 
@@ -57,5 +67,6 @@ int main(int argc, char** argv)
     // # iterations, problem size, flop rate, walltime
     printf("%zu %zu %.2f %.2f\n", iter, N, 1.0E-06 * flops / walltime, walltime);
 
+    MPI_Finalize();
     return EXIT_SUCCESS;
 }

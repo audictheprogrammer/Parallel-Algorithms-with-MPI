@@ -7,6 +7,7 @@
 #include "timing.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <mpi.h>
 
 double dmvm(double* restrict y,
     const double* restrict a,
@@ -16,12 +17,28 @@ double dmvm(double* restrict y,
 {
     double ts, te;
 
-    ts = getTimeStamp();
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int rest = N % size;
+    int N_local = N / size + (rank < rest);
+    int lower_neighbor = (rank + 1) % size;
+    int upper_neighbor = (rank - 1) + size*((rank-1) < 0);
+
+    ts = MPI_Wtime();
     for (int j = 0; j < iter; j++) {
-        for (int r = 0; r < N; r++) {
-            for (int c = 0; c < N; c++) {
-                y[r] = y[r] + a[r * N + c] * x[c];
+
+        for (int rot = 0; rot < size; rot++) {
+            int cs = ((rank+rot) % size) * N_local; // column_shift, supposing N is equally distributed.
+            for (int r = 0; r < N_local; r++) {
+                for (int c = cs; c < cs+N_local; c++) {
+                    y[r] = y[r] + a[r * N + c] * x[c-cs];
+                }
             }
+
+            MPI_Sendrecv_replace((void *)x, N_local, MPI_DOUBLE, upper_neighbor, 0, lower_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
         }
 #ifdef CHECK
         {
@@ -35,7 +52,7 @@ double dmvm(double* restrict y,
         }
 #endif
     }
-    te = getTimeStamp();
+    te = MPI_Wtime();
 
     return te - ts;
 }
