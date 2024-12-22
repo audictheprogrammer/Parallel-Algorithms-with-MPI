@@ -6,7 +6,11 @@
  */
 #ifndef __SOLVER_H_
 #define __SOLVER_H_
+#include <mpi.h>
+#include "util.h"
 #include "parameter.h"
+#include "mpi.h"
+#include "util.h"
 
 typedef struct {
     double dx, dy;
@@ -25,4 +29,6 @@ extern void initSolver(Solver*, Parameter*, int problem);
 extern void getResult(Solver*);
 extern void writeResult(Solver*, char*);
 extern void solve(Solver*);
+extern void solveV2(Solver*);
+extern void solveV3(Solver*);
 #endif

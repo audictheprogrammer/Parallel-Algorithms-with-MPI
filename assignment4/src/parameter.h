@@ -6,6 +6,7 @@
  */
 #ifndef __PARAMETER_H_
 #define __PARAMETER_H_
+#include <mpi.h>
 
 typedef struct {
     double xlength, ylength;

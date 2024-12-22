@@ -68,6 +68,11 @@ void readParameter(Parameter* param, const char* filename)
 
 void printParameter(Parameter* param)
 {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank != 0) {
+        return ;
+    } 
     printf("Parameters:\n");
     printf("Geometry data:\n");
     printf("\tDomain box size (x, y): %e, %e\n", param->xlength, param->ylength);
