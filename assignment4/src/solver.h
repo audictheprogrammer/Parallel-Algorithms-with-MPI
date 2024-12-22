@@ -7,6 +7,8 @@
 #ifndef __SOLVER_H_
 #define __SOLVER_H_
 #include "parameter.h"
+#include "mpi.h"
+#include "util.h"
 
 typedef struct {
     double dx, dy;
@@ -21,6 +23,7 @@ typedef struct {
     int itermax;
 } Solver;
 
+extern void exchange(Solver* solver);
 extern void initSolver(Solver*, Parameter*, int problem);
 extern void getResult(Solver*);
 extern void writeResult(Solver*, char*);

@@ -17,6 +17,7 @@
 
 int main(int argc, char** argv)
 {
+    MPI_Init(&argc, &argv);
     double startTime, endTime;
     Parameter params;
     Solver solver;
@@ -33,9 +34,13 @@ int main(int argc, char** argv)
     startTime = getTimeStamp();
     solve(&solver);
     endTime = getTimeStamp();
-    writeResult(&solver, "p.dat");
 
-    printf("Walltime %.2fs\n", endTime - startTime);
+    getResult(&solver);
+
+    if (solver.rank == 0) {
+        printf("Walltime %.2fs\n", endTime - startTime);
+    }
+    MPI_Finalize();
 
     return EXIT_SUCCESS;
 }
