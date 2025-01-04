@@ -12,27 +12,33 @@ unset SLURM_EXPORT_ENV
 
 module load likwid intel intelmpi
 export I_MPI_PIN=1
-export I_MPI_DEBUG=4
-export I_MPI_PIN_PROCESSOR_LIST=0-71
+export I_MPI_DEBUG=0
 
 FILENAME="result_bench_internode.csv"
 
-cd ~/PAMPI/pampi-tutorial/ex4/dmvm/mpi
+cd ~/Parallel-Algorithms-with-MPI/assignment3/dmvm-skeleton/
 make distclean
 make
 
-rm $FILENAME
+rm -f $FILENAME
 touch $FILENAME
 echo "Ranks,NITER,N,MFlops,Time" >>$FILENAME
 
 _iterate() {
     for np in $(seq 1 4); do
         npn=$(($np * $NPM))
+        np_1=$(($npn - 1))
 
-        result="$(mpirun -n $npn ./exe-ICX $N $NITER)"
-        result="$(echo $result | sed 's/MPI startup(): Warning: I_MPI_PMI_LIBRARY will be ignored since the hydra process manager was found //g')"
+        raw_result=$(mpirun -n $npn ./exe-ICX $N $NITER 2>&1)
+        echo "Running mpirun -n $npn ./exe-ICX $N $NITER"
 
-        echo $npn $result >>$FILENAME
+        result=$(echo "$raw_result" | grep -E '^[0-9]+ [0-9]+ [0-9.]+ [0-9.]+$')
+
+        if [[ ! -z $result ]]; then
+            echo "$npn $result" >>$FILENAME
+        else
+            echo "Warning: No valid result captured for np=$npn, NITER=$NITER, N=$N" >> debug.log
+        fi
     done
 }
 
@@ -48,12 +54,12 @@ NITER=100000
 N=4000
 _iterate
 
-# For domain of 4000x4000
+# For domain of 10000x10000
 NITER=10000
 N=10000
 _iterate
 
-# For domain of 4000x4000
+# For domain of 20000x20000
 NITER=5000
 N=20000
 _iterate

@@ -5,9 +5,10 @@
  * license that can be found in the LICENSE file.
  */
 #include "timing.h"
+#include "util.h"
+#include "allocate.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <mpi.h>
 
 double dmvm(double* restrict y,
@@ -23,11 +24,11 @@ double dmvm(double* restrict y,
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     int rest = N % size;
-    int N_local = N / size + (rank < rest);
+    int N_local = (N / size) + (rank < rest);
     int lower_neighbor = (rank + 1) % size;
     int upper_neighbor = (rank - 1) + size*((rank-1) < 0);
     int N_current = N_local;
-    int cs = rank * (N/size) + fmin(rest, rank);
+    int cs = rank * (N/size) + MIN(rest, rank);
 
     ts = MPI_Wtime();
     for (int j = 0; j < iter; j++) {
@@ -56,6 +57,36 @@ double dmvm(double* restrict y,
 #endif
     }
 
+    double* Y;
+    int* recvcounts;
+    int* displs;
+
+    if (rank == 0) {
+        Y = (double*) allocate(ARRAY_ALIGNMENT, N * sizeof(double));
+        recvcounts = (int*) allocate(ARRAY_ALIGNMENT, size * sizeof(int));
+        displs = (int*) allocate(ARRAY_ALIGNMENT, size * sizeof(int));
+
+        recvcounts[0] = N_local;
+        displs[0] = 0;
+        for (int i = 1; i < size; i++) {
+            recvcounts[i] = (N / size) + (i < (N % size));
+            displs[i] = displs[i-1] + recvcounts[i-1];
+        }
+
+    }
+
+    MPI_Gatherv(y, N_local, MPI_DOUBLE, Y, recvcounts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        free(recvcounts);
+        free(displs);
+        if (N < 10) {
+            printf("Values of Y: \n");
+            for (int i = 0; i < N; i++) {
+                printf("%f \n", Y[i]);
+            }
+        }
+        free(Y);
+    }
     te = MPI_Wtime();
 
     return te - ts;

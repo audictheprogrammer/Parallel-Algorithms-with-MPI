@@ -64,10 +64,14 @@ int main(int argc, char** argv)
     }
 
     walltime = dmvm(y, a, x, N, iter);
-
+    free(x);
+    free(y);
+    free(a);
     double flops = (double)2.0 * N * N * iter;
     // # iterations, problem size, flop rate, walltime
-    printf("%zu %zu %.2f %.2f\n", iter, N, 1.0E-06 * flops / walltime, walltime);
+    if (rank == 0) {
+        printf("\n%zu %zu %.2f %.2f\n", iter, N, 1.0E-06 * flops / walltime, walltime);
+    }
 
     MPI_Finalize();
     return EXIT_SUCCESS;
